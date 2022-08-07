@@ -2,8 +2,9 @@
 
 ; smells like OO, probably because of the atom-ish stuff
 
-(defn pointer-new []
-  {:display "_"})
+(defn pointer-new
+  ( [] {:display " "})
+  ( [c] {:display c}))
 
 (defn gradient [x1 y1 x2 y2]
   (/ (- y2 y1) (- x2 x1)))
@@ -19,6 +20,16 @@
       "/"
     "|"))))
 
+(defn overlay [char1 char2]
+  (let [input (disj (set [char1 char2]) " ")]
+  (if (= 1 (count input))
+    (first input)
+    (if (and  (contains? input "|") (contains? input "-"))
+      "+"
+      (if (and (contains? input "/") (contains? input "\\"))
+        "X"
+        "*")))))
+
 (defn pointer-in
   [prev x y]
   (assoc prev :in-coord [x y])
@@ -28,11 +39,11 @@
   [prev x y]
   (let [prev-coord (get prev :in-coord)]
   (if prev-coord
-    (assoc prev :display (character (gradient
+    (assoc prev :display (overlay (get prev :display)  (character (gradient
                                       (first prev-coord)
                                       (second prev-coord)
-                                      x y)))
-    (assoc prev :display "-")
+                                      x y))))
+    (assoc prev :display " ")
   ; prevy == y -> bar
   ; (println (str "In:" (get prev :in-coord) " Out: " x " " y))
   )

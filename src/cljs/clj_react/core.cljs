@@ -60,6 +60,8 @@
   (fn []
     [:span.main
      [:svg {:style  {:width "500px" :height "500px"}
+      :on-pointer-enter (fn [e] (println "Buttons: " (.. e -buttons)))
+      :on-pointer-leave (fn [e] (println "Buttons: " (.. e -buttons)))
       :on-pointer-down (fn [e]
                           (swap! pixels conj [(.. e -clientX) (.. e -clientY)]))}
       (map (fn [el] [:circle {:r 2 :cx (first el) :cy (second el) :fill "green"}]) @pixels)
@@ -72,7 +74,7 @@
 
              ; probably want to create a pointer-start and pointer-end methods that operate on a state object...
              ; anyway continue to prototype with this for now
-             :on-pointer-enter (fn [e] (swap! cell pointer-in (.. e -clientX) (.. e -clientY)))
+             :on-pointer-enter (fn [e] (when (= (.. e -buttons) 1) (swap! cell pointer-in (.. e -clientX) (.. e -clientY))))
              :on-pointer-leave (fn [e] (when (= (.. e -buttons) 1) (swap! cell pointer-out (.. e -clientX) (.. e -clientY))))
              } (get @cell :display)]
      ]
@@ -80,19 +82,34 @@
 
 (defn ascii-page []
   ; huh, this layout isn't quite right. We want a new atom for every cell
-  (let [cells (repeatedly 500 #(atom (pointer-new)))]
+  (let [cells (repeatedly 500 #(atom (pointer-new)))
+        touch-on (fn [e cell] (println "Touch on:" (.. e -buttons)) (when (= 1 (.. e -buttons)) (swap! cell pointer-in (.. e -clientX) (.. e -clientY))))
+        touch-off  (fn [e cell] (println "Touch off:" (.. e -buttons)) (when (= 1 (.. e -buttons)) (swap! cell pointer-out (.. e -clientX) (.. e -clientY))))]
   (fn [] 
-    [:div.main {:style {:width "400px" :line-break "anywhere" :font-family "monospace"}}
-     (doall (map-indexed (fn [idx cell] [:span {:style {} :key idx
+    [:div.main {:style {:width "800px" :font-family "monospace"
+                        :white-space "pre-wrap" :word-break "break-all"
+                        :border "1px solid black"
+                        :line-height "150%"}}
+     
+     (interleave (map (fn [idx]  [:br {:style {:user-select "none"} :key idx}]) (range))
+                 (partition-all 50 
+     (doall (map-indexed (fn [idx cell] [:span {:style {:user-select "none"} :key idx
              ; need to store entry and exit to figure out what character to install
              ; is atom really the best way to hold state here??
              ; functional so update is a bit weird to start with
              ; is helix or hx better for this?
              ; anyway continue to prototype with this for now
-             :on-pointer-enter (fn [e] (swap! cell pointer-in (.. e -clientX) (.. e -clientY)))
-             :on-pointer-leave (fn [e] (when (= 1 (.. e -buttons)) (swap! cell pointer-out (.. e -clientX) (.. e -clientY))))
-             } (get @cell :display)]) cells))
+             :on-pointer-enter #(touch-on % cell)
+             :on-pointer-down #(touch-on % cell)
+             :on-pointer-out #(touch-off % cell)
+             :on-pointer-leave #(touch-off % cell)
+             } (get @cell :display)]) cells))))
      ])))
+
+; AHHH CRAP how to interpose with a dynamic br (indexed)
+; interleave is stopped by the shortest so an infinite line of brs is ok
+; TODO: clean up event handling, spamming everything made tablet touch work
+
 
 
 (defn items-page []
