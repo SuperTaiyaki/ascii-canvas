@@ -4,7 +4,8 @@
    [reagent.dom :as rdom]
    [reagent.session :as session]
    [reitit.frontend :as reitit]
-   [accountant.core :as accountant]))
+   [accountant.core :as accountant]
+   [clj-react.graphics :refer [pointer-in pointer-out pointer-new]]))
 
 ;; -------------------------
 ;; Routes
@@ -53,21 +54,6 @@
      [:input {:type "button" :value "Add 2" :on-click (fn [] ( swap! action-list conj "Next 2"))}
       ]])))
 
-(defn pointer-new []
-  {:display "_"})
-
-(defn pointer-in
-  [prev x y]
-  (assoc prev :in-coord [x y])
-  )
-
-(defn pointer-out
-  [prev x y]
-  ; prevy == y -> bar
-  (println (str "In:" (get prev :in-coord) " Out: " x " " y))
-  (assoc prev :display "*")
-  )
-
 (defn canvas-page []
   (let [pixels (atom [])
         cell (atom ( pointer-new))]
@@ -94,9 +80,9 @@
 
 (defn ascii-page []
   ; huh, this layout isn't quite right. We want a new atom for every cell
-  (let [cells (repeatedly 100 #(atom (pointer-new)))]
+  (let [cells (repeatedly 500 #(atom (pointer-new)))]
   (fn [] 
-    [:div.main {:style {:width "200px" :line-break "anywhere" :font-family "monospace"}}
+    [:div.main {:style {:width "400px" :line-break "anywhere" :font-family "monospace"}}
      (doall (map-indexed (fn [idx cell] [:span {:style {} :key idx
              ; need to store entry and exit to figure out what character to install
              ; is atom really the best way to hold state here??
