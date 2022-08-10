@@ -45,7 +45,7 @@
                                       x y)))
            :in-coord nil   ; why does this break drawing???
            )
-    (assoc prev :display " ")
+    (prev)
   ; prevy == y -> bar
   ; (println (str "In:" (get prev :in-coord) " Out: " x " " y))
   )

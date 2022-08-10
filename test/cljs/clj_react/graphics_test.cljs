@@ -49,8 +49,10 @@
 (deftest combinations
   (testing "Plus"
     (is (= "+" (in-out-display "-" 5 20 5 0)))
-  (testing "Cross")
-  (testing "Star")
+  (testing "Cross"
+    (is (= "X" (in-out-display "\\" 0 20 20 0))))
+  (testing "Star"
+    (is (= "*" (in-out-display "+"  0 20 20 0))))
   )
 )
 
@@ -59,6 +61,8 @@
   (testing "Plus"
     (is (= "+" (SUT/overlay "|" "-")))
     (is (= "+" (SUT/overlay "-" "|")))
+    (is (= "+" (SUT/overlay "+" "+")))
     (is (= "X" (SUT/overlay "/" "\\")))
+    (is (= "*" (SUT/overlay "+" "/")))
     )
   )

@@ -10,6 +10,9 @@
 ;; -------------------------
 ;; Routes
 
+(def canvas-width 100) ;characters
+(def cell-count 2000)
+
 (def router
   (reitit/router
    [["/" :index]
@@ -17,8 +20,6 @@
     ["/items"
      ["" :items]
      ["/:item-id" :item]]
-    ["/about" :about]
-    ["/actions" :action]
     ["/canvas" :canvas]
     ["/ascii" :ascii]]))
 
@@ -35,11 +36,8 @@
     [:span.main
      [:h1 "Welcome to clj-react"]
      [:ul
-      [:li [:a {:href (path-for :action)} "Action test"]]
       [:li [:a {:href (path-for :canvas)} "Canvas test"]]
       [:li [:a {:href (path-for :ascii)} "ascii test"]]
-      [:li [:a {:href (path-for :items)} "Items of clj-react"]]
-      [:li [:a {:href "/broken/link"} "Broken link 3"]]
       [:li [:a {:href "/broken/link"} "Broken link"]]]]))
 
 (defn action-page []
@@ -81,7 +79,7 @@
      ]
     )))
 
-(defn is-drag? [event]
+(defn is-draw? [event]
   (if (=  (.. event -pointerType) "pen")
     (>  (.. event -pressure) 0)
     (= (.. event -buttons) 1))
@@ -89,9 +87,10 @@
 
 (defn ascii-page []
   ; huh, this layout isn't quite right. We want a new atom for every cell
-  (let [cells (repeatedly 500 #(atom (pointer-new)))
-        touch-on (fn [e cell] (println "Touch on:" (.. e -buttons) "Pressure" (.. e -pressure)) (when (is-drag? e) (swap! cell pointer-in (.. e -clientX) (.. e -clientY))))
-        touch-off  (fn [e cell] (println "Touch off:" (.. e -buttons)) (when (is-drag? e) (swap! cell pointer-out (.. e -clientX) (.. e -clientY))))]
+  ; each cell should be its own data/renderer...
+  (let [cells (repeatedly cell-count #(atom (pointer-new)))
+        touch-on (fn [e cell] (println "Touch on:" (.. e -buttons) "Pressure" (.. e -pressure)) (when (is-draw? e) (swap! cell pointer-in (.. e -clientX) (.. e -clientY))))
+        touch-off  (fn [e cell] (println "Touch off:" (.. e -buttons)) (when (is-draw? e) (swap! cell pointer-out (.. e -clientX) (.. e -clientY))))]
   (fn [] 
     [:div.main {:style {:width "800px" :font-family "monospace"
                         :white-space "pre-wrap" :word-break "break-all"
@@ -100,7 +99,7 @@
      
      (interleave (map (fn [idx]  [:br {:style {:user-select "none" :pointer-events "none"
                                                :touch-action "none"} :key idx}]) (range))
-                 (partition-all 50 
+                 (partition-all canvas-width 
      (doall (map-indexed (fn [idx cell] [:span {:style {:user-select "none"} :key idx
              ; need to store entry and exit to figure out what character to install
              ; is atom really the best way to hold state here??
@@ -119,30 +118,6 @@
       ]
      ])))
 
-(defn items-page []
-  (fn []
-    [:span.main
-     [:h1 "The items of clj-react"]
-     [:ul (map (fn [item-id]
-                 [:li {:name (str "item-" item-id) :key (str "item-" item-id)}
-                  [:a {:href (path-for :item {:item-id item-id})} "Item: " item-id]])
-               (range 1 60))]]))
-
-
-(defn item-page []
-  (fn []
-    (let [routing-data (session/get :route)
-          item (get-in routing-data [:route-params :item-id])]
-      [:span.main
-       [:h1 (str "Item " item " of clj-react")]
-       [:p [:a {:href (path-for :items)} "Back to the list of items"]]])))
-
-
-(defn about-page []
-  (fn [] [:span.main
-          [:h1 "About clj-react"]]))
-
-
 ;; -------------------------
 ;; Translate routes -> page components
 
@@ -150,10 +125,6 @@
   (case route
     :index #'home-page
     :index_html #'home-page
-    :about #'about-page
-    :items #'items-page
-    :item #'item-page
-    :action #'action-page
     :canvas #'canvas-page
     :ascii #'ascii-page))
 
