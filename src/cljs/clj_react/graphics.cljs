@@ -42,7 +42,9 @@
     (assoc prev :display (overlay (get prev :display)  (character (gradient
                                       (first prev-coord)
                                       (second prev-coord)
-                                      x y))))
+                                      x y)))
+           :in-coord nil   ; why does this break drawing???
+           )
     (assoc prev :display " ")
   ; prevy == y -> bar
   ; (println (str "In:" (get prev :in-coord) " Out: " x " " y))

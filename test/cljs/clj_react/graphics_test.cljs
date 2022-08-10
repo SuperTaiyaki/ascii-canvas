@@ -9,13 +9,17 @@
 
 (defn in-out 
   ([inx iny outx outy]
-  (let [state (SUT/pointer-new)]
-    (SUT/pointer-out (SUT/pointer-in state inx iny) outx outy)))
-  ([c inx iny outx outy]
-  (let [state (SUT/pointer-new c)]
-    (SUT/pointer-out (SUT/pointer-in state inx iny) outx outy))))
+   (-> (SUT/pointer-new)
+       (SUT/pointer-in inx iny)
+       (SUT/pointer-out outx outy))
+   )
+([c inx iny outx outy]
+   (-> (SUT/pointer-new c)
+       (SUT/pointer-in inx iny)
+       (SUT/pointer-out outx outy))
+   )
+)
 
-; &rest is the better way...
 (defn in-out-display
   ([inx iny outx outy] (get (in-out inx iny outx outy) :display))
   ([ch inx iny outx outy] (get  (in-out ch inx iny outx outy) :display))

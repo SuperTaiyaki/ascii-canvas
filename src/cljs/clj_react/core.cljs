@@ -13,6 +13,7 @@
 (def router
   (reitit/router
    [["/" :index]
+    ["/index.html" :index_html]
     ["/items"
      ["" :items]
      ["/:item-id" :item]]
@@ -80,18 +81,25 @@
      ]
     )))
 
+(defn is-drag? [event]
+  (if (=  (.. event -pointerType) "pen")
+    (>  (.. event -pressure) 0)
+    (= (.. event -buttons) 1))
+  )
+
 (defn ascii-page []
   ; huh, this layout isn't quite right. We want a new atom for every cell
   (let [cells (repeatedly 500 #(atom (pointer-new)))
-        touch-on (fn [e cell] (println "Touch on:" (.. e -buttons)) (when (= 1 (.. e -buttons)) (swap! cell pointer-in (.. e -clientX) (.. e -clientY))))
-        touch-off  (fn [e cell] (println "Touch off:" (.. e -buttons)) (when (= 1 (.. e -buttons)) (swap! cell pointer-out (.. e -clientX) (.. e -clientY))))]
+        touch-on (fn [e cell] (println "Touch on:" (.. e -buttons) "Pressure" (.. e -pressure)) (when (is-drag? e) (swap! cell pointer-in (.. e -clientX) (.. e -clientY))))
+        touch-off  (fn [e cell] (println "Touch off:" (.. e -buttons)) (when (is-drag? e) (swap! cell pointer-out (.. e -clientX) (.. e -clientY))))]
   (fn [] 
     [:div.main {:style {:width "800px" :font-family "monospace"
                         :white-space "pre-wrap" :word-break "break-all"
                         :border "1px solid black"
                         :line-height "150%"}}
      
-     (interleave (map (fn [idx]  [:br {:style {:user-select "none"} :key idx}]) (range))
+     (interleave (map (fn [idx]  [:br {:style {:user-select "none" :pointer-events "none"
+                                               :touch-action "none"} :key idx}]) (range))
                  (partition-all 50 
      (doall (map-indexed (fn [idx cell] [:span {:style {:user-select "none"} :key idx
              ; need to store entry and exit to figure out what character to install
@@ -100,17 +108,16 @@
              ; is helix or hx better for this?
              ; anyway continue to prototype with this for now
              :on-pointer-enter #(touch-on % cell)
-             :on-pointer-down #(touch-on % cell)
-             :on-pointer-out #(touch-off % cell)
+             ; :on-pointer-down #(touch-on % cell)
+             ; :on-pointer-out #(touch-off % cell)
              :on-pointer-leave #(touch-off % cell)
              } (get @cell :display)]) cells))))
+     [:br]
+     [:input {:type "button" :value "Clear" :on-click (fn []
+            (doall  (map (fn [cell] (reset! cell (pointer-new))) cells
+                                                         )))}
+      ]
      ])))
-
-; AHHH CRAP how to interpose with a dynamic br (indexed)
-; interleave is stopped by the shortest so an infinite line of brs is ok
-; TODO: clean up event handling, spamming everything made tablet touch work
-
-
 
 (defn items-page []
   (fn []
@@ -142,6 +149,7 @@
 (defn page-for [route]
   (case route
     :index #'home-page
+    :index_html #'home-page
     :about #'about-page
     :items #'items-page
     :item #'item-page
@@ -175,10 +183,10 @@
   (accountant/configure-navigation!
    {:nav-handler
     (fn [path]
-      (let [match (reitit/match-by-path router path)
+      (let [match (reitit/match-by-path router "/ascii")
             current-page (:name (:data  match))
             route-params (:path-params match)]
-        (session/put! :route {:current-page (page-for current-page)
+        (session/put! :route {:current-page  #'ascii-page  ;(page-for current-page)
                               :route-params route-params})
         ))
     :path-exists?
