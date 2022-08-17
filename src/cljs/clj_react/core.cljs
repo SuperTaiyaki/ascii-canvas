@@ -155,9 +155,21 @@
              ; Why is this skipping evets? my thinkpad too slow?
              } (get @cell :display)]) cells))))
      [:br]
+     [:label
+      [:input {:type "checkbox" :name "showGrid" :defaultChecked "yes" :id "showGrid"
+               :on-change (fn [e] (reset! grid-on? (.. e -target -checked)))} ]
+      [:span "Show grid"]]
      [:input {:type "button" :value "Clear" :on-click (fn []
             (doall  (map (fn [cell] (reset! cell (pointer-new))) cells
                                                          )))}
+      ]
+     [:div
+      [:ul
+       [:li "Draw with any device" ]
+       [:li "Stylus works better with mouse disabled"]
+       [:li "Erase with any button other than primary (middle mouse, stylus #2 on my devices)"]
+       [:li "Enter text with the keyboard at the last clicked location"]
+       ]
       ]
      ])))
 
