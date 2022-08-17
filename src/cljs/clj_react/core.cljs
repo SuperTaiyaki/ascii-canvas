@@ -10,8 +10,8 @@
 ;; -------------------------
 ;; Routes
 
-(def canvas-width 100) ;characters
-(def cell-count 2000)
+(def canvas-width 60) ;characters
+(def cell-count 1200)
 
 (def router
   (reitit/router
