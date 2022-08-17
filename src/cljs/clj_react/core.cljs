@@ -40,6 +40,9 @@
       [:li [:a {:href (path-for :ascii)} "ascii test"]]
       [:li [:a {:href "/broken/link"} "Broken link"]]]]))
 
+(defn dump-coords [detail event ]
+  (println "X:" (. event -clientX) " Y: " (. event -clientY) "Buttons: " (. event -buttons) "Pressure: " (. event -pressure) "Device: "  (. event -pointerType) "Source:" detail))
+
 (defn canvas-page []
   (let [pixels (atom [])
         cell (atom ( pointer-new))]
@@ -80,6 +83,15 @@
         :nop)
       )))
 
+(defn input-active? [event]
+  (case (. event -pointerType)
+    "mouse" (.. js/document (getElementById "mouseEnabled") -checked)
+    "pen" (.. js/document (getElementById "stylusEnabled") -checked)
+    "touch" (.. js/document (getElementById "touchEnabled") -checked)
+    false
+    ))
+
+
 (defn printable? [key]
   (=  (. key -length) 1)
   )
@@ -89,6 +101,7 @@
   ; each cell should be its own data/renderer...
   (let [cells (repeatedly cell-count #(atom (pointer-new)))
         cursor (atom 0)
+        grid-on? (atom true)
         touch-on  (fn [e cell idx]  (case (pointer-state e)
                                   :draw (do  
                                           (swap! cell pointer-in (. e -clientX) (. e -clientY))
@@ -109,18 +122,31 @@
                                (do
                                  (reset! (nth cells @cursor) (pointer-new (. e -key)))
                                  (swap! cursor inc))))}
+     [:label
+      [:input {:type "checkbox" :name "mouse" :defaultChecked "yes" :id "mouseEnabled"} ]
+      [:span "Mouse"]]
+     [:label
+      [:input {:type "checkbox" :name "stylus" :defaultChecked "yes" :id "stylusEnabled"} ]
+      [:span "Stylus"]]
+     [:label
+      [:input {:type "checkbox" :name "touch" :defaultChecked "yes" :id "penEnabled"} ]
+      [:span "Touch"]]
      
      (interleave (map (fn [idx]  [:br {:style {:user-select "none" :pointer-events "none"
                                                :touch-action "none"} :key idx}]) (range))
                  (partition-all canvas-width 
-     (doall (map-indexed (fn [idx cell] [:span {:style {:user-select "none" :touch-action "none"} :key idx
+     (doall (map-indexed (fn [idx cell] [:span {:style {:user-select "none" :touch-action "none"
+                                                        :border (if @grid-on? "1px solid #CCC" "none")
+                                                        :padding (if @grid-on? "0px" "1px")
+                                                        } :key idx
              ; need to store entry and exit to figure out what character to install
              ; is atom really the best way to hold state here??
              ; functional so update is a bit weird to start with
              ; is helix or hx better for this?
              ; anyway continue to prototype with this for now
-             :on-pointer-enter (fn [e] (touch-on e cell idx) (. (. e -target) (releasePointerCapture (. e -pointerId))) true)
-             :on-pointer-down (fn [e] (touch-on e cell idx) (. (. e -target) (releasePointerCapture (. e -pointerId))) true)
+             :on-pointer-enter (fn [e] (when (input-active? e)
+                                                (dump-coords "enter" e) (touch-on e cell idx) (. (. e -target) (releasePointerCapture (. e -pointerId)))) true)
+             :on-pointer-down (fn [e] (when (input-active? e) (dump-coords "down" e) (touch-on e cell idx) (. (. e -target) (releasePointerCapture (. e -pointerId)))) true)
              ; there should be a less clunky way to get to releasePointerCapture
              :on-pointer-up (fn [e] (touch-off e cell idx) true)
              :on-pointer-leave (fn [e] (touch-off e cell idx) true)
