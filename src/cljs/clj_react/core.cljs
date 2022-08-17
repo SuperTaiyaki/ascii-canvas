@@ -76,22 +76,35 @@
     :nop)
     ))
 
+(defn printable? [key]
+  (=  (. key -length) 1)
+  )
+
 (defn ascii-page []
   ; huh, this layout isn't quite right. We want a new atom for every cell
   ; each cell should be its own data/renderer...
   (let [cells (repeatedly cell-count #(atom (pointer-new)))
-        touch-on  (fn [e cell]  (case (pointer-state e)
-                                  :draw (swap! cell pointer-in (. e -clientX) (. e -clientY))
+        cursor (atom 0)
+        touch-on  (fn [e cell idx]  (case (pointer-state e)
+                                  :draw (do  
+                                          (swap! cell pointer-in (. e -clientX) (. e -clientY))
+                                          (reset! cursor idx))
                                   :erase (swap! cell erase)
                                   ()))
-        touch-off (fn [e cell]  (case  (pointer-state e)
+        touch-off (fn [e cell idx]  (case  (pointer-state e)
                                   :draw (swap! cell pointer-out (. e -clientX) (. e -clientY))
                                   ()))]
   (fn [] 
     [:div.main {:style {:width "800px" :font-family "monospace"
                         :white-space "pre-wrap" :word-break "break-all"
                         :border "1px solid black"
-                        :line-height "150%" :touch-action "none"}}
+                        :line-height "150%" :touch-action "none"}
+                :tabIndex -1 ; catch keyboard input
+                :on-key-down (fn [e]
+                               (when (printable? (. e -key))
+                               (do
+                                 (reset! (nth cells @cursor) (pointer-new (. e -key)))
+                                 (swap! cursor inc))))}
      
      (interleave (map (fn [idx]  [:br {:style {:user-select "none" :pointer-events "none"
                                                :touch-action "none"} :key idx}]) (range))
@@ -102,11 +115,11 @@
              ; functional so update is a bit weird to start with
              ; is helix or hx better for this?
              ; anyway continue to prototype with this for now
-             :on-pointer-enter (fn [e] (touch-on e cell) (. (. e -target) (releasePointerCapture (. e -pointerId))) true)
-             :on-pointer-down (fn [e] (touch-on e cell) (. (. e -target) (releasePointerCapture (. e -pointerId))) true)
+             :on-pointer-enter (fn [e] (touch-on e cell idx) (. (. e -target) (releasePointerCapture (. e -pointerId))) true)
+             :on-pointer-down (fn [e] (touch-on e cell idx) (. (. e -target) (releasePointerCapture (. e -pointerId))) true)
              ; there should be a less clunky way to get to releasePointerCapture
-             :on-pointer-up (fn [e] (touch-off e cell) true)
-             :on-pointer-leave (fn [e] (touch-off e cell) true)
+             :on-pointer-up (fn [e] (touch-off e cell idx) true)
+             :on-pointer-leave (fn [e] (touch-off e cell idx) true)
 
              :on-drag-start #(false)
              ; Why is this skipping evets? my thinkpad too slow?
