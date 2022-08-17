@@ -73,8 +73,8 @@
 
              ; probably want to create a pointer-start and pointer-end methods that operate on a state object...
              ; anyway continue to prototype with this for now
-             :on-pointer-enter (fn [e] (when (= (.. e -buttons) 1) (swap! cell pointer-in (.. e -clientX) (.. e -clientY))))
-             :on-pointer-leave (fn [e] (when (= (.. e -buttons) 1) (swap! cell pointer-out (.. e -clientX) (.. e -clientY))))
+             :on-pointer-enter (fn [e] (when (= (. e -buttons) 1) (swap! cell pointer-in (. e -clientX) (. e -clientY))) true)
+             :on-pointer-leave (fn [e] (when (= (. e -buttons) 1) (swap! cell pointer-out (. e -clientX) (. e -clientY))) true)
              } (get @cell :display)]
      ]
     )))
@@ -89,27 +89,31 @@
   ; huh, this layout isn't quite right. We want a new atom for every cell
   ; each cell should be its own data/renderer...
   (let [cells (repeatedly cell-count #(atom (pointer-new)))
-        touch-on (fn [e cell] (println "Touch on:" (.. e -buttons) "Pressure" (.. e -pressure)) (when (is-draw? e) (swap! cell pointer-in (.. e -clientX) (.. e -clientY))))
-        touch-off  (fn [e cell] (println "Touch off:" (.. e -buttons)) (when (is-draw? e) (swap! cell pointer-out (.. e -clientX) (.. e -clientY))))]
+        touch-on (fn [e cell]  (when (is-draw? e) (swap! cell pointer-in (. e -clientX) (. e -clientY))))
+        touch-off  (fn [e cell]  (when (is-draw? e) (swap! cell pointer-out (. e -clientX) (. e -clientY))))]
   (fn [] 
     [:div.main {:style {:width "800px" :font-family "monospace"
                         :white-space "pre-wrap" :word-break "break-all"
                         :border "1px solid black"
-                        :line-height "150%"}}
+                        :line-height "150%" :touch-action "none"}}
      
      (interleave (map (fn [idx]  [:br {:style {:user-select "none" :pointer-events "none"
                                                :touch-action "none"} :key idx}]) (range))
                  (partition-all canvas-width 
-     (doall (map-indexed (fn [idx cell] [:span {:style {:user-select "none"} :key idx
+     (doall (map-indexed (fn [idx cell] [:span {:style {:user-select "none" :touch-action "none"} :key idx
              ; need to store entry and exit to figure out what character to install
              ; is atom really the best way to hold state here??
              ; functional so update is a bit weird to start with
              ; is helix or hx better for this?
              ; anyway continue to prototype with this for now
-             :on-pointer-enter #(touch-on % cell)
-             ; :on-pointer-down #(touch-on % cell)
-             ; :on-pointer-out #(touch-off % cell)
-             :on-pointer-leave #(touch-off % cell)
+             :on-pointer-enter (fn [e] (touch-on e cell) (. (. e -target) (releasePointerCapture (. e -pointerId))) true)
+             :on-pointer-down (fn [e] (touch-on e cell) (. (. e -target) (releasePointerCapture (. e -pointerId))) true)
+             ; there should be a less clunky way to get to releasePointerCapture
+             :on-pointer-up (fn [e] (touch-off e cell) true)
+             :on-pointer-leave (fn [e] (touch-off e cell) true)
+
+             :on-drag-start #(false)
+             ; Why is this skipping evets? my thinkpad too slow?
              } (get @cell :display)]) cells))))
      [:br]
      [:input {:type "button" :value "Clear" :on-click (fn []

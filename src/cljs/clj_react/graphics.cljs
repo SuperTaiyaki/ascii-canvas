@@ -32,23 +32,22 @@
 
 (defn pointer-in
   [prev x y]
-  (assoc prev :in-coord [x y])
+  (assoc prev :in-coord [x y] :entered true)
   )
 
 (defn pointer-out
   [prev x y]
   (let [prev-coord (get prev :in-coord)]
   (if prev-coord
-    (assoc prev :display (overlay (get prev :display)  (character (gradient
-                                      (first prev-coord)
-                                      (second prev-coord)
-                                      x y)))
+    (assoc prev :display
+           (overlay (get prev :display)
+                    (character (gradient
+                                 (first prev-coord) (second prev-coord) x y)))
            :in-coord nil   ; why does this break drawing???
            )
-    (prev)
+    prev
   ; prevy == y -> bar
   ; (println (str "In:" (get prev :in-coord) " Out: " x " " y))
-  )
-  ))
+  )))
 
 
