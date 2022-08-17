@@ -67,14 +67,18 @@
     )))
 
 (defn pointer-state [event]
-  (if (>  (. event -buttons) 1)
-    :erase
-    (if  (if (=  (.. event -pointerType) "pen")
-      (>  (.. event -pressure) 0)
-      (= (.. event -buttons) 1))
-    :draw
-    :nop)
-    ))
+  (if (=  (.. event -pointerType) "pen")
+    (if (= (. event -buttons) 5)
+      :erase
+      (if (> (. event -pressure) 0)
+        :draw
+        :nop))
+    (if (>  (. event -buttons) 1)
+      :erase
+      (if  (= (.. event -buttons) 1)
+        :draw
+        :nop)
+      )))
 
 (defn printable? [key]
   (=  (. key -length) 1)
@@ -121,7 +125,7 @@
              :on-pointer-up (fn [e] (touch-off e cell idx) true)
              :on-pointer-leave (fn [e] (touch-off e cell idx) true)
 
-             :on-drag-start #(false)
+             :on-drag-start (fn [e] false)
              ; Why is this skipping evets? my thinkpad too slow?
              } (get @cell :display)]) cells))))
      [:br]
