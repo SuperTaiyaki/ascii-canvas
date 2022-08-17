@@ -41,7 +41,8 @@
       [:li [:a {:href "/broken/link"} "Broken link"]]]]))
 
 (defn dump-coords [detail event ]
-  (println "X:" (. event -clientX) " Y: " (. event -clientY) "Buttons: " (. event -buttons) "Pressure: " (. event -pressure) "Device: "  (. event -pointerType) "Source:" detail))
+  ; (println "X:" (. event -clientX) " Y: " (. event -clientY) "Buttons: " (. event -buttons) "Pressure: " (. event -pressure) "Device: "  (. event -pointerType) "Source:" detail)
+  )
 
 (defn canvas-page []
   (let [pixels (atom [])
@@ -129,7 +130,7 @@
       [:input {:type "checkbox" :name "stylus" :defaultChecked "yes" :id "stylusEnabled"} ]
       [:span "Stylus"]]
      [:label
-      [:input {:type "checkbox" :name "touch" :defaultChecked "yes" :id "penEnabled"} ]
+      [:input {:type "checkbox" :name "touch" :defaultChecked "yes" :id "touchEnabled"} ]
       [:span "Touch"]]
      
      (interleave (map (fn [idx]  [:br {:style {:user-select "none" :pointer-events "none"
@@ -169,6 +170,7 @@
        [:li "Stylus works better with mouse disabled"]
        [:li "Erase with any button other than primary (middle mouse, stylus #2 on my devices)"]
        [:li "Enter text with the keyboard at the last clicked location"]
+       [:li [:a {:href "https://github.com/SuperTaiyaki/ascii-canvas"} "Source code"]]
        ]
       ]
      ])))
