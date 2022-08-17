@@ -5,7 +5,7 @@
    [reagent.session :as session]
    [reitit.frontend :as reitit]
    [accountant.core :as accountant]
-   [clj-react.graphics :refer [pointer-in pointer-out pointer-new]]))
+   [clj-react.graphics :refer [pointer-in pointer-out pointer-new erase]]))
 
 ;; -------------------------
 ;; Routes
@@ -66,18 +66,27 @@
      ]
     )))
 
-(defn is-draw? [event]
-  (if (=  (.. event -pointerType) "pen")
-    (>  (.. event -pressure) 0)
-    (= (.. event -buttons) 1))
-  )
+(defn pointer-state [event]
+  (if (>  (. event -buttons) 1)
+    :erase
+    (if  (if (=  (.. event -pointerType) "pen")
+      (>  (.. event -pressure) 0)
+      (= (.. event -buttons) 1))
+    :draw
+    :nop)
+    ))
 
 (defn ascii-page []
   ; huh, this layout isn't quite right. We want a new atom for every cell
   ; each cell should be its own data/renderer...
   (let [cells (repeatedly cell-count #(atom (pointer-new)))
-        touch-on (fn [e cell]  (when (is-draw? e) (swap! cell pointer-in (. e -clientX) (. e -clientY))))
-        touch-off  (fn [e cell]  (when (is-draw? e) (swap! cell pointer-out (. e -clientX) (. e -clientY))))]
+        touch-on  (fn [e cell]  (case (pointer-state e)
+                                  :draw (swap! cell pointer-in (. e -clientX) (. e -clientY))
+                                  :erase (swap! cell erase)
+                                  ()))
+        touch-off (fn [e cell]  (case  (pointer-state e)
+                                  :draw (swap! cell pointer-out (. e -clientX) (. e -clientY))
+                                  ()))]
   (fn [] 
     [:div.main {:style {:width "800px" :font-family "monospace"
                         :white-space "pre-wrap" :word-break "break-all"

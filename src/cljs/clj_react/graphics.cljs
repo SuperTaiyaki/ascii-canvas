@@ -50,4 +50,7 @@
   ; (println (str "In:" (get prev :in-coord) " Out: " x " " y))
   )))
 
+(defn erase [prev]
+  (assoc prev :display " "))
+
 
